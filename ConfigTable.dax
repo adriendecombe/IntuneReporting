@@ -1,0 +1,10 @@
+let
+    Source = AzureStorage.Tables("axawev2prodblobstorage"),
+    WinEdV2ConfigTable1 = Source{[Name="WinEdV2ConfigTable"]}[Data],
+    #"Expanded Content" = Table.ExpandRecordColumn(WinEdV2ConfigTable1, "Content", {"ID", "Username", "DeviceName", "LastReport", "ConfigName", "Date", "status"}, {"ID", "Username", "DeviceName", "LastReport", "ConfigName", "Date", "status"}),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Expanded Content", "ID", Splitter.SplitTextByDelimiter("_", QuoteStyle.Csv), {"ID.1", "ID.2", "ID.3"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"ID.1", type text}, {"ID.2", type text}, {"ID.3", type text}, {"PartitionKey", type datetime}, {"LastReport", type datetime}, {"Date", type datetime}}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Changed Type",{"PartitionKey", "status", "ID.1", "ID.2", "ID.3", "RowKey", "Timestamp", "Username", "DeviceName", "LastReport", "ConfigName", "Date"}),
+    #"Removed Duplicates" = Table.Distinct(#"Reordered Columns", {"PartitionKey", "status", "ID.1", "ID.2", "ID.3"})
+in
+    #"Removed Duplicates"

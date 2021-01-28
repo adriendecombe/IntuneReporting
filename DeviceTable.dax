@@ -1,0 +1,11 @@
+let
+    Source = AzureStorage.Tables("axawev2prodblobstorage"),
+    WinEdV2DeviceTable1 = Source{[Name="WinEdV2DeviceTable"]}[Data],
+    #"Expanded Content" = Table.ExpandRecordColumn(WinEdV2DeviceTable1, "Content", {"Date", "ID", "DeviceName", "freeStorageSpace", "GroupTag", "lastSyncDateTime", "Manufacturer", "Model", "OS", "OSType", "PrimaryUser", "PrimaryUserCompany", "PrimaryUserCountry", "PrimaryUserMail", "PrimaryUserUPN", "SerialNumber", "totalStorageSpace"}, {"Date", "ID" ,"DeviceName", "freeStorageSpace", "GroupTag", "lastSyncDateTime", "Manufacturer", "Model", "OS", "OSType", "PrimaryUser", "PrimaryUserCompany", "PrimaryUserCountry", "PrimaryUserMail", "PrimaryUserUPN", "SerialNumber", "totalStorageSpace"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Content",{{"Date", type datetime}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"OSType"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Removed Columns",{{"lastSyncDateTime", type datetime}}),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Changed Type1", "PrimaryUserCompany", Splitter.SplitTextByDelimiter(" - ", QuoteStyle.Csv), {"PrimaryUserCompany.1", "PrimaryUserCompany.2"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Split Column by Delimiter",{{"PrimaryUserCompany.1", "PrimaryUserCompany"}, {"PrimaryUserCompany.2", "PrimaryUserCompanyExtension"}})
+in
+    #"Renamed Columns"

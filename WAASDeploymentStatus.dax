@@ -1,0 +1,33 @@
+let AnalyticsQuery =
+let Source = Json.Document(Web.Contents("https://api.loganalytics.io/v1/workspaces/"&WorkspaceID&"/query", 
+[Query=[#"query"="
+WaaSDeploymentStatus
+| extend Q_Title = strcat(format_datetime((UpdateReleasedDate), 'yyyy-MM-dd'),' Cumulative Update for Windows 10 Version ',OSVersion,' (',substring(ReleaseName,0,9),')',' - [',TargetBuild,']')
+| extend F_Title = strcat(format_datetime((UpdateReleasedDate), 'yyyy-MM-dd'),' Feature Update ',ReleaseName)
+| extend TitleYears = format_datetime((UpdateReleasedDate), 'yyyy')
+| extend TitleMonth = format_datetime((UpdateReleasedDate), 'MM')
+",#"x-ms-app"="OmsAnalyticsPBI",#"prefer"="ai.response-thinning=true"],Timeout=#duration(0,0,4,0)])),
+TypeMap = #table(
+{ "AnalyticsTypes", "Type" }, 
+{ 
+{ "string",   Text.Type },
+{ "int",      Int32.Type },
+{ "long",     Int64.Type },
+{ "real",     Double.Type },
+{ "timespan", Duration.Type },
+{ "datetime", DateTimeZone.Type },
+{ "bool",     Logical.Type },
+{ "guid",     Text.Type },
+{ "dynamic",  Text.Type }
+}),
+DataTable = Source[tables]{0},
+Columns = Table.FromRecords(DataTable[columns]),
+ColumnsWithType = Table.Join(Columns, {"type"}, TypeMap , {"AnalyticsTypes"}),
+Rows = Table.FromRows(DataTable[rows], Columns[name]), 
+Table = Table.TransformColumnTypes(Rows, Table.ToList(ColumnsWithType, (c) => { c{0}, c{3}}))
+in
+Table,
+    #"Filtered Rows" = Table.SelectRows(AnalyticsQuery, each ([Computer] <> "" and [Computer] <> "#")),
+    #"Removed Duplicates" = Table.Distinct(#"Filtered Rows", {"TimeGenerated", "ComputerID"})
+in
+    #"Removed Duplicates"

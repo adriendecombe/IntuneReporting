@@ -1,0 +1,9 @@
+let
+    Source = AzureStorage.Tables("axawev2prodblobstorage"),
+    WinEdV2AppTable1 = Source{[Name="WinEdV2AppTable"]}[Data],
+    #"Expanded Content" = Table.ExpandRecordColumn(WinEdV2AppTable1, "Content", {"InstallState", "ID", "Username", "AppID", "AppType", "DeviceName", "DisplayVersion", "Date", "ContentVersion", "LastSync", "DeviceID", "AppName"}, {"InstallState", "ID", "Username", "AppID", "AppType", "DeviceName", "DisplayVersion", "Date", "ContentVersion", "LastSync", "DeviceID", "AppName"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Content",{{"PartitionKey", type datetime}, {"LastSync", type datetime}, {"Date", type datetime}}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Changed Type",{"PartitionKey", "ID", "InstallState", "RowKey", "Timestamp", "Username", "AppID", "AppType", "DeviceName", "DisplayVersion", "Date", "ContentVersion", "LastSync", "DeviceID", "AppName"}),
+    #"Removed Duplicates" = Table.Distinct(#"Reordered Columns1", {"PartitionKey", "ID", "InstallState"})
+in
+    #"Removed Duplicates"
